@@ -2,6 +2,7 @@
 
 import http.client
 import json
+from typing import Any
 from urllib.parse import urlparse
 
 from django.test import LiveServerTestCase
@@ -13,7 +14,12 @@ URL = 'https://example.com/very/long/path'
 
 
 class UrlShortenerE2ETests(LiveServerTestCase):
-    def _request(self, method, path, payload=None):
+    def _request(
+        self,
+        method: str,
+        path: str,
+        payload: dict[str, Any] | None = None,
+    ) -> tuple[http.client.HTTPResponse, bytes]:
         connection = http.client.HTTPConnection(
             urlparse(self.live_server_url).hostname,
             urlparse(self.live_server_url).port,
@@ -28,7 +34,7 @@ class UrlShortenerE2ETests(LiveServerTestCase):
         finally:
             connection.close()
 
-    def test_full_shorten_and_redirect_flow(self):
+    def test_full_shorten_and_redirect_flow(self) -> None:
         response, raw = self._request('POST', '/api/urls/', {'url': URL})
 
         self.assertEqual(response.status, 201)
@@ -47,7 +53,7 @@ class UrlShortenerE2ETests(LiveServerTestCase):
         self.assertEqual(response.status, 302)
         self.assertEqual(response.getheader('Location'), URL)
 
-    def test_short_url_from_response_is_reachable(self):
+    def test_short_url_from_response_is_reachable(self) -> None:
         _, raw = self._request('POST', '/api/urls/', {'url': URL})
         short_url = json.loads(raw)['short_url']
         path = urlparse(short_url).path
@@ -57,7 +63,7 @@ class UrlShortenerE2ETests(LiveServerTestCase):
         self.assertEqual(response.status, 302)
         self.assertEqual(response.getheader('Location'), URL)
 
-    def test_repeated_shortening_returns_same_code(self):
+    def test_repeated_shortening_returns_same_code(self) -> None:
         first, _ = self._request('POST', '/api/urls/', {'url': URL})
         second, raw = self._request('POST', '/api/urls/', {'url': URL})
 
@@ -66,15 +72,14 @@ class UrlShortenerE2ETests(LiveServerTestCase):
         self.assertEqual(json.loads(raw)['code'], hash_url(URL)[:CODE_LENGTH])
         self.assertEqual(ShortURL.objects.count(), 1)
 
-    def test_invalid_url_returns_400(self):
+    def test_invalid_url_returns_400(self) -> None:
         response, _ = self._request('POST', '/api/urls/', {'url': 'not-a-url'})
         self.assertEqual(response.status, 400)
 
-    def test_unknown_code_returns_404_for_api(self):
+    def test_unknown_code_returns_404_for_api(self) -> None:
         response, _ = self._request('GET', '/api/urls/deadbeef00/')
         self.assertEqual(response.status, 404)
 
-    def test_unknown_code_returns_404_for_redirect(self):
+    def test_unknown_code_returns_404_for_redirect(self) -> None:
         response, _ = self._request('GET', '/shrt/deadbeef00/')
         self.assertEqual(response.status, 404)
-

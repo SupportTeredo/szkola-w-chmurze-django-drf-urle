@@ -1,6 +1,7 @@
 """Deterministyczne generowanie krótkich kodów na podstawie adresu URL."""
 
 import hashlib
+from collections.abc import Callable
 
 CODE_LENGTH = 10
 MAX_CODE_LENGTH = 32
@@ -11,7 +12,7 @@ def hash_url(url: str) -> str:
     return hashlib.sha256(url.encode('utf-8')).hexdigest()
 
 
-def generate_code(url: str, is_taken) -> str:
+def generate_code(url: str, is_taken: Callable[[str], bool]) -> str:
     """Zwraca kod wyprowadzony z hasha URL.
 
     Zaczynamy od CODE_LENGTH znaków. Jeśli kod jest już zajęty przez inny
@@ -24,4 +25,3 @@ def generate_code(url: str, is_taken) -> str:
         if not is_taken(code):
             return code
     raise ValueError('Nie udało się wygenerować unikalnego kodu.')
-

@@ -1,7 +1,9 @@
 from django.db import IntegrityError, transaction
+from django.http import HttpRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from .hashing import generate_code
@@ -11,7 +13,7 @@ from .serializers import ShortURLSerializer
 MAX_ATTEMPTS = 5
 
 
-def _get_or_create_short_url(original_url):
+def _get_or_create_short_url(original_url: str) -> tuple[ShortURL, bool]:
     """Zwraca (obiekt, czy_utworzono) dla podanego adresu URL."""
     existing = ShortURL.objects.filter(original_url=original_url).first()
     if existing:
@@ -35,7 +37,7 @@ def _get_or_create_short_url(original_url):
 
 
 @api_view(['POST'])
-def shorten_url(request):
+def shorten_url(request: Request) -> Response:
     serializer = ShortURLSerializer(data=request.data, context={'request': request})
     serializer.is_valid(raise_exception=True)
 
@@ -48,11 +50,11 @@ def shorten_url(request):
 
 
 @api_view(['GET'])
-def resolve_url(request, code):
+def resolve_url(request: Request, code: str) -> Response:
     short_url = get_object_or_404(ShortURL, code=code)
     return Response({'url': short_url.original_url})
 
 
-def redirect_url(request, code):
+def redirect_url(request: HttpRequest, code: str) -> HttpResponseRedirect:
     short_url = get_object_or_404(ShortURL, code=code)
     return redirect(short_url.original_url)

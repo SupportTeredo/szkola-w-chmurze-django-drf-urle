@@ -14,7 +14,7 @@ class ShortURLSerializer(serializers.ModelSerializer):
         fields = ('code', 'original_url', 'url', 'short_url')
         read_only_fields = ('code', 'original_url', 'short_url')
 
-    def validate_url(self, value):
+    def validate_url(self, value: str) -> str:
         parsed = urlparse(value)
         if parsed.scheme not in ('http', 'https'):
             raise serializers.ValidationError(
@@ -24,8 +24,7 @@ class ShortURLSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Adres musi zawierać nazwę hosta.')
         return value
 
-    def get_short_url(self, obj):
+    def get_short_url(self, obj: ShortURL) -> str:
         path = f'/shrt/{obj.code}/'
         request = self.context.get('request')
         return request.build_absolute_uri(path) if request else path
-

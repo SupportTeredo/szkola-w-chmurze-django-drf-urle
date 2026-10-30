@@ -1,3 +1,4 @@
+from typing import Any
 from unittest import mock
 
 from django.db import IntegrityError
@@ -11,10 +12,10 @@ URL = 'https://example.com/very/long/path'
 
 
 class HashCollisionTests(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.url = reverse('shortener:shorten')
 
-    def test_collision_extends_code(self):
+    def test_collision_extends_code(self) -> None:
         digest = hash_url(URL)
         ShortURL.objects.create(
             original_url='https://other.example.com/taken',
@@ -26,7 +27,7 @@ class HashCollisionTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()['code'], digest[:CODE_LENGTH + 1])
 
-    def test_collision_extends_code_until_free(self):
+    def test_collision_extends_code_until_free(self) -> None:
         digest = hash_url(URL)
         for length in range(CODE_LENGTH, CODE_LENGTH + 3):
             ShortURL.objects.create(
@@ -38,7 +39,7 @@ class HashCollisionTests(TestCase):
 
         self.assertEqual(response.json()['code'], digest[:CODE_LENGTH + 3])
 
-    def test_collision_does_not_affect_other_urls(self):
+    def test_collision_does_not_affect_other_urls(self) -> None:
         digest = hash_url(URL)
         ShortURL.objects.create(
             original_url='https://other.example.com/taken',
@@ -55,13 +56,13 @@ class HashCollisionTests(TestCase):
 
 
 class UniquenessConstraintTests(TestCase):
-    def test_original_url_must_be_unique(self):
+    def test_original_url_must_be_unique(self) -> None:
         ShortURL.objects.create(original_url=URL, code='aaaaaaaaaa')
 
         with self.assertRaises(IntegrityError):
             ShortURL.objects.create(original_url=URL, code='bbbbbbbbbb')
 
-    def test_code_must_be_unique(self):
+    def test_code_must_be_unique(self) -> None:
         ShortURL.objects.create(original_url=URL, code='aaaaaaaaaa')
 
         with self.assertRaises(IntegrityError):
@@ -72,17 +73,17 @@ class UniquenessConstraintTests(TestCase):
 
 
 class RepeatedShorteningTests(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.url = reverse('shortener:shorten')
 
-    def test_returns_same_record(self):
+    def test_returns_same_record(self) -> None:
         first = self.client.post(self.url, {'url': URL}).json()
         second = self.client.post(self.url, {'url': URL}).json()
 
         self.assertEqual(first['code'], second['code'])
         self.assertEqual(ShortURL.objects.count(), 1)
 
-    def test_returns_existing_record_after_integrity_error(self):
+    def test_returns_existing_record_after_integrity_error(self) -> None:
         existing = ShortURL.objects.create(
             original_url=URL,
             code=hash_url(URL)[:CODE_LENGTH],
@@ -90,7 +91,7 @@ class RepeatedShorteningTests(TestCase):
         real_filter = ShortURL.objects.filter
         calls = {'count': 0}
 
-        def filter_side_effect(*args, **kwargs):
+        def filter_side_effect(*args: Any, **kwargs: Any) -> Any:
             calls['count'] += 1
             if calls['count'] == 1:
                 # Pierwsze sprawdzenie nie widzi jeszcze rekordu (wyścig).
@@ -108,7 +109,7 @@ class RepeatedShorteningTests(TestCase):
         self.assertEqual(response.json()['code'], existing.code)
         self.assertEqual(ShortURL.objects.count(), 1)
 
-    def test_no_url_normalization(self):
+    def test_no_url_normalization(self) -> None:
         self.client.post(self.url, {'url': URL})
         self.client.post(self.url, {'url': URL + '/'})
 
@@ -116,27 +117,27 @@ class RepeatedShorteningTests(TestCase):
 
 
 class UrlValidationTests(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.url = reverse('shortener:shorten')
 
-    def test_rejects_empty_string(self):
+    def test_rejects_empty_string(self) -> None:
         self.assertEqual(self.client.post(self.url, {'url': ''}).status_code, 400)
 
-    def test_rejects_whitespace_only(self):
+    def test_rejects_whitespace_only(self) -> None:
         self.assertEqual(self.client.post(self.url, {'url': '   '}).status_code, 400)
 
-    def test_rejects_url_without_host(self):
+    def test_rejects_url_without_host(self) -> None:
         self.assertEqual(
             self.client.post(self.url, {'url': 'http://'}).status_code, 400
         )
 
-    def test_rejects_url_exceeding_max_length(self):
+    def test_rejects_url_exceeding_max_length(self) -> None:
         long_url = 'https://example.com/' + 'a' * 2100
         self.assertEqual(
             self.client.post(self.url, {'url': long_url}).status_code, 400
         )
 
-    def test_accepts_url_with_query_and_port(self):
+    def test_accepts_url_with_query_and_port(self) -> None:
         url = 'https://example.com:8443/path?query=1&other=2#fragment'
         response = self.client.post(self.url, {'url': url})
 
