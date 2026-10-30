@@ -1,4 +1,5 @@
 from django.db import IntegrityError, transaction
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -44,3 +45,9 @@ def shorten_url(request):
         data,
         status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
     )
+
+
+@api_view(['GET'])
+def resolve_url(request, code):
+    short_url = get_object_or_404(ShortURL, code=code)
+    return Response({'url': short_url.original_url})
