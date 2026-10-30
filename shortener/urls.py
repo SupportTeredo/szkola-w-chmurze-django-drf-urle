@@ -7,4 +7,5 @@ app_name = 'shortener'
 urlpatterns = [
     path('api/urls/', views.shorten_url, name='shorten'),
     path('api/urls/<str:code>/', views.resolve_url, name='resolve'),
+    path('shrt/<str:code>/', views.redirect_url, name='redirect'),
 ]

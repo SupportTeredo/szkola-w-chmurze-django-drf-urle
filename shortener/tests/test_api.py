@@ -74,3 +74,24 @@ class ResolveEndpointTests(TestCase):
             reverse('shortener:resolve', args=[self.short_url.code])
         )
         self.assertEqual(response.status_code, 405)
+
+
+class RedirectEndpointTests(TestCase):
+    def setUp(self):
+        self.short_url = ShortURL.objects.create(
+            original_url=URL,
+            code=hash_url(URL)[:10],
+        )
+
+    def test_redirects_to_original_url(self):
+        response = self.client.get(
+            reverse('shortener:redirect', args=[self.short_url.code])
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], URL)
+
+    def test_unknown_code_returns_404(self):
+        response = self.client.get(reverse('shortener:redirect', args=['deadbeef00']))
+        self.assertEqual(response.status_code, 404)
+

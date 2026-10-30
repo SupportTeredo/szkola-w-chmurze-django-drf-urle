@@ -1,5 +1,5 @@
 from django.db import IntegrityError, transaction
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -51,3 +51,8 @@ def shorten_url(request):
 def resolve_url(request, code):
     short_url = get_object_or_404(ShortURL, code=code)
     return Response({'url': short_url.original_url})
+
+
+def redirect_url(request, code):
+    short_url = get_object_or_404(ShortURL, code=code)
+    return redirect(short_url.original_url)
